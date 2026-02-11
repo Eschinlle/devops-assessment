@@ -27,8 +27,8 @@ def valid_payload():
     """Generate valid request payload"""
     return {
         "message": "This is a test",
-        "to": "Juan Perez",
-        "from": "Rita Asturia",
+        "to": "Helen Livano",
+        "from": "Jenifer Tarco",
         "timeToLifeSec": 45
     }
 
@@ -72,8 +72,8 @@ def test_devops_post_success(valid_headers, valid_payload):
     assert response.status_code == 200
     data = response.json()
     assert "message" in data
-    assert "Juan Perez" in data["message"]
-    assert data["message"] == "Hello Juan Perez your message will be send"
+    assert "Helen Livano" in data["message"]
+    assert data["message"] == "Hello Helen Livano your message will be send"
 
 def test_devops_post_missing_api_key(valid_jwt, valid_payload):
     """Test POST request without API Key"""
@@ -148,8 +148,8 @@ def test_devops_patch_returns_error():
 def test_devops_different_recipients(valid_headers):
     """Test with different recipient names"""
     payloads = [
-        {"message": "Test 1", "to": "Maria Garcia", "from": "Juan Lopez", "timeToLifeSec": 30},
-        {"message": "Test 2", "to": "Carlos Ruiz", "from": "Ana Martinez", "timeToLifeSec": 60},
+        {"message": "Test 1", "to": "Jenifer Tarco", "from": "Scarleth Suatunce", "timeToLifeSec": 30},
+        {"message": "Test 2", "to": "Helen Livano", "from": "Ana Martinez", "timeToLifeSec": 60},
     ]
     
     for payload in payloads:
