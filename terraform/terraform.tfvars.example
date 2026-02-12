@@ -1,0 +1,25 @@
+namespace   = "devops"
+environment = "production"
+
+app_name    = "DevOps Microservice"
+app_version = "1.0.0"
+
+api_key    = "2f5ae96c-b558-4c7b-a590-a501ae1c3f6c"
+jwt_secret = "your-secret-key-change-in-production"
+
+image_name = "devops-microservice"
+image_tag  = "latest"
+
+replicas     = 2
+min_replicas = 2
+max_replicas = 10
+
+cpu_request    = "100m"
+memory_request = "128Mi"
+cpu_limit      = "500m"
+memory_limit   = "512Mi"
+
+cpu_target_percentage    = 70
+memory_target_percentage = 80
+
+ingress_host = "localhost"
