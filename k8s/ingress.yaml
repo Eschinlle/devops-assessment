@@ -6,7 +6,6 @@ metadata:
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
-    nginx.ingress.kubernetes.io/load-balance: "least_conn"
 spec:
   ingressClassName: nginx
   rules:

@@ -1,0 +1,479 @@
+MANUAL Y DOCUMENTACIÓN DE TODO LO REALIZADO PARA ESTA PRUEBA
+
+================================================================================
+1. INTRODUCCIÓN
+================================================================================
+
+Este manual documenta todos los pasos necesarios para probar el microservicio
+DevOps desarrollado. El sistema incluye:
+
+- REST API con FastAPI y autenticación JWT
+- Containerización con Docker
+- Orquestación con Kubernetes
+- Infrastructure as Code con Terraform
+- Pipeline CI/CD con GitHub Actions
+
+================================================================================
+2. REQUISITOS PREVIOS
+================================================================================
+
+2.1 Software Necesario
+----------------------
+Python 3.11+
+Docker 20.10+
+Docker Compose 2.0+
+Kubernetes CLI (kubectl)
+Minikube
+Terraform 1.0+
+Git
+curl
+jq (para parsing JSON)
+
+2.2 Verificar Instalaciones
+---------------------------
+Ejecutar los siguientes comandos para verificar:
+
+$ python3 --version
+
+$ docker --version
+
+$ docker compose version
+
+$ kubectl version --client
+
+$ minikube version
+
+$ terraform version
+
+2.3 Clonar el Repositorio
+-------------------------
+$ cd ~/Documentos
+$ git clone https://github.com/Eschinlle/devops-assessment.git
+$ cd devops-assessment
+
+================================================================================
+3. PRUEBAS LOCALES (PYTHON)
+================================================================================
+
+3.1 Preparar Entorno Virtual
+----------------------------
+$ python3 -m venv venv
+$ source venv/bin/activate
+
+Verificar que el prompt cambie a: (venv) $
+
+3.2 Instalar Dependencias
+-------------------------
+$ pip install --upgrade pip
+$ pip install -r requirements.txt
+
+3.3 Ejecutar Tests Unitarios
+----------------------------
+$ pytest --cov=app --cov-report=html --cov-report=term-missing -v
+
+3.4 Análisis de Código
+----------------------
+$ pylint app/ --exit-zero
+
+$ black --check app/ tests/
+
+$ mypy app/ --ignore-missing-imports
+
+$ bandit -r app/
+
+3.5 Ejecutar Servidor Local
+---------------------------
+Terminal 1:
+$ uvicorn app.main:app --reload
+
+SALIDA ESPERADA:
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process
+INFO:     Started server process
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+
+Terminal 2 (mantener Terminal 1 corriendo):
+$ curl http://localhost:8000/
+
+RESPUESTA ESPERADA:
+{
+  "status": "healthy",
+  "service": "DevOps Microservice",
+  "version": "1.0.0"
+}
+
+$ JWT=$(curl -s http://localhost:8000/generate-jwt | jq -r '.jwt')
+$ echo $JWT
+
+RESPUESTA: eyJ0eXAiOiJKV1QiLCJhbGc... (string largo)
+
+$ curl -X POST http://localhost:8000/DevOps \
+  -H "Content-Type: application/json" \
+  -H "X-Parse-REST-API-Key: 2f5ae96c-b558-4c7b-a590-a501ae1c3f6c" \
+  -H "X-JWT-KWY: ${JWT}" \
+  -d '{
+    "message": "Test local",
+    "to": "Helen Livano",
+    "from": "Edison Chinlle",
+    "timeToLifeSec": 45
+  }'
+
+RESPUESTA ESPERADA:
+{
+  "message": "Hello Helen Livano your message will be send"
+}
+
+Detener servidor: Ctrl+C en Terminal 1
+
+================================================================================
+4. PRUEBAS CON DOCKER COMPOSE
+================================================================================
+
+4.1 Construir y Levantar Contenedores
+-------------------------------------
+$ docker compose up -d --build
+
+4.2 Verificar Estado
+--------------------
+$ docker compose ps
+
+4.3 Verificar Logs
+-----------------
+$ docker compose logs --tail=20
+
+4.4 Probar Load Balancer
+------------------------
+$ curl http://localhost:8080/
+
+RESPUESTA ESPERADA:
+{
+  "status": "healthy",
+  "service": "DevOps Microservice",
+  "version": "1.0.0"
+}
+
+4.5 Probar Autenticación
+------------------------
+$ JWT=$(curl -s http://localhost:8080/generate-jwt | jq -r '.jwt')
+$ curl -X POST http://localhost:8080/DevOps \
+  -H "Content-Type: application/json" \
+  -H "X-Parse-REST-API-Key: 2f5ae96c-b558-4c7b-a590-a501ae1c3f6c" \
+  -H "X-JWT-KWY: ${JWT}" \
+  -d '{
+    "message": "Test local",
+    "to": "Helen Livano",
+    "from": "Edison Chinlle",
+    "timeToLifeSec": 45
+  }'
+
+RESPUESTA ESPERADA:
+{
+  "message": "Hello Helen Livano your message will be send"
+}
+
+4.6 Probar Load Balancing (10 requests)
+---------------------------------------
+$ for i in {1..10}; do
+  curl -s http://localhost:8080/ | jq -r '.service'
+  sleep 0.3
+done
+
+RESULTADO: Todas las respuestas deben mostrar "DevOps Microservice"
+
+4.7 Script de Testing Automatizado
+----------------------------------
+$ chmod +x test_endpoint.sh
+$ API_URL=http://localhost:8080 ./test_endpoint.sh
+
+RESULTADO ESPERADO:
+========================================
+DevOps Microservice - Endpoint Testing
+========================================
+
+Test 1: Health Check (GET /)
+Health check passed
+
+Test 2: Generate JWT (GET /generate-jwt)
+JWT generation successful
+
+Test 3: POST /DevOps - Missing API Key
+Correctly rejected request without API Key
+
+Test 4: POST /DevOps - Invalid API Key
+Correctly rejected request with invalid API Key
+
+Test 5: POST /DevOps - Missing JWT
+Correctly rejected request without JWT
+
+Test 6: POST /DevOps - Invalid JWT
+Correctly rejected request with invalid JWT
+
+Test 7: POST /DevOps - Invalid Payload
+Correctly rejected invalid payload
+
+Test 8: POST /DevOps - Valid Request
+Request successful!
+
+Test 9: GET /DevOps - Wrong Method
+Correctly returned ERROR for non-POST method
+
+Test 10: OpenAPI Docs
+OpenAPI documentation is accessible
+
+========================================
+All tests completed successfully!
+========================================
+
+4.8 Documentación Interactiva
+-----------------------------
+Abrir navegador en: http://localhost:8080/docs
+
+Verificar:
+Swagger UI se carga correctamente
+Se muestran 3 endpoints: /, /generate-jwt, /DevOps
+Se puede probar cada endpoint desde la interfaz
+
+4.9 Detener Contenedores
+------------------------
+$ docker compose down
+
+================================================================================
+5. PRUEBAS CON KUBERNETES
+================================================================================
+
+5.1 Iniciar Minikube
+--------------------
+$ minikube start --cpus=4 --memory=8192 --driver=docker
+
+5.2 Habilitar Addons
+--------------------
+$ minikube addons enable ingress
+$ minikube addons enable metrics-server
+
+VERIFICAR:
+$ minikube addons list | grep -E "ingress|metrics-server"
+
+5.3 Construir Imagen en Minikube
+--------------------------------
+$ eval $(minikube docker-env)
+$ docker build -t devops-microservice:latest .
+$ docker images | grep devops-microservice
+
+5.4 Desplegar Aplicación
+------------------------
+MÉTODO 1: Paso por paso
+
+$ kubectl apply -f k8s/namespace.yaml
+$ sleep 2
+$ kubectl apply -f k8s/configmap.yaml
+$ kubectl apply -f k8s/deployment.yaml
+$ kubectl apply -f k8s/ingress.yaml
+$ kubectl apply -f k8s/hpa.yaml
+
+MÉTODO 2: Todo junto
+
+$ kubectl apply -f k8s/
+
+5.5 Verificar Despliegue
+------------------------
+$ kubectl get all -n devops
+
+RESULTADO ESPERADO:
+NAME                                       READY   STATUS    RESTARTS   AGE
+pod/devops-microservice-xxxxxxxxxx-xxxxx   1/1     Running   0          30s
+pod/devops-microservice-xxxxxxxxxx-xxxxx   1/1     Running   0          30s
+
+NAME                                  TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE
+service/devops-microservice-service   ClusterIP   10.96.xxx.xxx   <none>        80/TCP    30s
+
+NAME                                  READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/devops-microservice   2/2     2            2           30s
+
+5.6 Verificar HPA
+----------------
+Esperar 30-60 segundos para que metrics-server inicie
+
+$ kubectl get hpa -n devops
+
+RESULTADO ESPERADO:
+NAME                      REFERENCE                        TARGETS                        MINPODS   MAXPODS   REPLICAS   AGE
+devops-microservice-hpa   Deployment/devops-microservice   cpu: 2%/70%, memory: 34%/80%   2         10        2          1m
+
+$ kubectl top pods -n devops
+
+RESULTADO ESPERADO:
+NAME                                   CPU(cores)   MEMORY(bytes)
+devops-microservice-xxxxxxxxxx-xxxxx   2m           44Mi
+devops-microservice-xxxxxxxxxx-xxxxx   2m           44Mi
+
+5.7 Verificar Logs
+-----------------
+$ kubectl logs -l app=devops-microservice -n devops --tail=20
+
+BUSCAR LÍNEAS:
+INFO:     Started server process
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000
+
+5.8 Probar Aplicación
+---------------------
+Terminal 1:
+$ kubectl port-forward svc/devops-microservice-service 8080:80 -n devops
+
+Terminal 2:
+$ curl http://localhost:8080/
+
+RESPUESTA ESPERADA:
+{
+  "status": "healthy",
+  "service": "DevOps Microservice",
+  "version": "1.0.0"
+}
+
+$ JWT=$(curl -s http://localhost:8080/generate-jwt | jq -r '.jwt')
+$ curl -X POST http://localhost:8080/DevOps \
+  -H "Content-Type: application/json" \
+  -H "X-Parse-REST-API-Key: 2f5ae96c-b558-4c7b-a590-a501ae1c3f6c" \
+  -H "X-JWT-KWY: ${JWT}" \
+  -d '{
+    "message": "Test local",
+    "to": "Helen Livano",
+    "from": "Edison Chinlle",
+    "timeToLifeSec": 45
+  }'
+
+RESPUESTA ESPERADA:
+{
+  "message": "Hello Helen Livano your message will be send"
+}
+
+Detener port-forward: Ctrl+C en Terminal 1
+
+5.9 Probar Auto-Scaling (Opcional)
+----------------------------------
+Terminal 1:
+$ kubectl port-forward svc/devops-microservice-service 8080:80 -n devops
+
+Terminal 2:
+$ for i in {1..500}; do
+  curl -s http://localhost:8080/ > /dev/null &
+  if [ $((i % 50)) -eq 0 ]; then
+    echo "Requests: $i"
+    sleep 1
+  fi
+done
+
+Terminal 3:
+$ watch -n 2 'kubectl get hpa -n devops'
+
+OBSERVAR: El HPA debería aumentar réplicas si CPU/Memory > threshold
+
+5.10 Limpiar Recursos
+---------------------
+$ kubectl delete -f k8s/
+
+================================================================================
+6. PRUEBAS CON TERRAFORM
+================================================================================
+
+6.1 Prerequisito: Limpiar K8s
+-----------------------------
+$ kubectl delete namespace devops --ignore-not-found=true
+$ sleep 5
+
+6.2 Inicializar Terraform
+-------------------------
+$ cd terraform/
+$ terraform init
+
+6.3 Validar Configuración
+-------------------------
+$ terraform validate
+
+$ terraform fmt -check
+
+6.4 Ver Plan de Ejecución
+-------------------------
+$ terraform plan
+
+6.5 Aplicar Configuración
+-------------------------
+$ terraform apply
+
+6.6 Ver Outputs
+--------------
+$ terraform output
+
+6.7 Verificar en Kubernetes
+---------------------------
+$ cd ..
+$ kubectl get all -n devops
+
+RESULTADO: Mismos recursos que con kubectl
+
+$ kubectl get hpa -n devops
+$ kubectl get ingress -n devops
+$ kubectl get configmap,secret -n devops
+
+6.8 Probar Aplicación
+---------------------
+$ kubectl port-forward svc/devops-microservice-service 8080:80 -n devops &
+$ sleep 5
+$ curl http://localhost:8080/
+$ kill %1
+
+6.9 Modificar Infraestructura
+-----------------------------
+$ cd terraform/
+$ terraform apply -var="replicas=3"
+
+$ cd ..
+$ kubectl get pods -n devops
+
+RESULTADO: Ahora hay 3 pods en lugar de 2
+
+6.10 Ver Estado de Terraform
+----------------------------
+$ cd terraform/
+$ terraform state list
+
+6.11 Destruir Infraestructura
+----------------------------------------
+$ terraform destroy
+
+$ cd ..
+$ kubectl get all -n devops
+
+================================================================================
+7. VALIDACIÓN DEL PIPELINE CI/CD
+================================================================================
+
+7.1 Verificar Pipeline en GitHub
+--------------------------------
+1. Ir a: https://github.com/Eschinlle/devops-assessment
+2. Click en la pestaña "Actions"
+3. Verificar workflows ejecutados
+
+RESULTADO ESPERADO:
+Workflow "CI/CD Pipeline" aparece en la lista
+Últimas ejecuciones muestran visto verde
+Al hacer click en una ejecución se ven 6 jobs:
+  - Build and Test
+  - Security Scan
+  - Build Docker Image
+  - Deploy to Production
+  - Deploy to Development
+  - On-Demand Deploy
+
+================================================================================
+FIN DEL MANUAL
+================================================================================
+
+Email: chinllesteven8@gmail.com
+GitHub: @Eschinlle
+Repositorio: https://github.com/Eschinlle/devops-assessment
+
+Última actualización: Febrero 12, 2026
+Versión del proyecto: 1.0.0

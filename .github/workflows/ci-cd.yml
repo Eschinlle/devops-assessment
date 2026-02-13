@@ -17,7 +17,7 @@ on:
           - staging
           - production
       version:
-        description: 'Version to deploy (leave empty for latest)'
+        description: 'Version to deploy'
         required: false
 
 env:
@@ -164,7 +164,7 @@ jobs:
         echo "Deploying to production..."
         echo "Branch: ${{ github.ref }}"
         echo "Commit: ${{ github.sha }}"
-        echo "In real scenario, this would trigger a deployment to Kubernetes or cloud provider"
+        echo "This is a test for TCS DevOps Assesment, in real scenario, this would trigger a deployment"
         echo "kubectl apply -f k8s/ to deploy the application"
         echo "kubectl rollout status deployment/devops-microservice -n devops to check deployment status"
 

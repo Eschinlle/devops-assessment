@@ -1,6 +1,7 @@
 """
-DevOps Microservice - Banco Pichincha Technical Assessment - Edison Chinlle
-FastAPI microservice with API Key and JWT authentication
+DevOps Microservice
+Author: Edison Chinlle
+Description: REST API with JWT authentication for Banco Pichincha assessment
 """
 from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel, Field

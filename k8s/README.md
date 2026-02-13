@@ -1,6 +1,6 @@
 # Kubernetes Manifests
 
-Manifiestos de Kubernetes para el despliegue del microservicio DevOps.
+Manifiestos de Kubernetes para el despliegue del microservicio DevOps - Edison Chinlle.
 
 ## Recursos
 
@@ -12,13 +12,13 @@ Manifiestos de Kubernetes para el despliegue del microservicio DevOps.
 
 ## Deployment
 
-### Opción 1: Aplicar todos los manifiestos
+### Aplicar todos los manifiestos
 
 ```bash
 kubectl apply -f k8s/
 ```
 
-### Opción 2: Aplicar uno por uno
+### Aplicar uno por uno
 
 ```bash
 kubectl apply -f k8s/namespace.yaml
